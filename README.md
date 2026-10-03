@@ -4,16 +4,12 @@ Backend take-home assignment implementation for a seat reservation service.
 
 ## Quick Start
 
-Run:
-
-docker compose up --build
-
-API: http://localhost:8080
-
-After changing database initialization SQL:
+Set the environment values from docs/laptop-setup-commands.md, then run:
 
 docker compose down -v
 docker compose up --build
+
+API: http://localhost:8080
 
 ## Core API
 
@@ -26,7 +22,7 @@ GET /health/live
 GET /health/ready
 GET /metrics
 
-The token endpoint is a minimal development authentication mechanism so the assignment API is directly runnable. Production deployment must override Jwt:Key with a deployment secret.
+The token endpoint is a minimal development authentication mechanism so the assignment API is directly runnable. Production deployment must provide a secure JWT signing key through environment configuration.
 
 Identity for reservation/cancellation comes from the JWT, not the request body. Money uses integer paise.
 
@@ -37,7 +33,7 @@ Reservation decisions are made inside MySQL/InnoDB transactions.
 The booking procedure:
 1. locks the authenticated user's row;
 2. checks persisted idempotency before making a new decision;
-3. locks requested seat rows in deterministic seat-number order using the show/seat unique index;
+3. locks requested seat rows using SELECT ... FOR UPDATE in deterministic seat-number order;
 4. validates all seats and the per-user limit;
 5. creates the reservation and seat mappings in the same transaction;
 6. commits once, or rolls back the complete request.
@@ -60,14 +56,17 @@ docs/setup.md — environment and database initialization
 docs/architecture.md — architecture
 docs/paytm-assignment-requirements.md — assignment requirements
 WRITEUP.md — final assignment write-up
+devnotes/concepts.md — engineering questions and explanations
 
 ## Repository Structure
 
 database/init — table creation
 database/seed — enum and development users
-database/migrations — stored procedures
-src/MyshowBook/Api — API source
-devnotes — persistent engineering context
-docs — project documentation
+database/functions — one stored procedure per file
+database/migrations — future timestamped schema changes
+src/MyshowBook/Api/Controllers — HTTP endpoints
+src/MyshowBook/Api/Helpers — application logic
+src/MyshowBook/Api/Models — request/response/result models
+src/MyshowBook/Api/Utility — shared infrastructure
 
-Automated correctness tests and the 20k-style burst test are the next milestones.
+Automated concurrency verification and deployment are the next milestones.
