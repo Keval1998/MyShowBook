@@ -1,0 +1,165 @@
+name: Assignment QA Validation
+
+on:
+  push:
+    branches:
+      - qa/full-assignment-validation
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build and start exact Docker Compose stack
+        env:
+          MYSQL_DATABASE: myshowbook
+          MYSQL_USER: myshowbook
+          MYSQL_PASSWORD: myshowbook_dev
+          MYSQL_ROOT_PASSWORD: root_dev
+          CONNECTIONSTRINGS__DEFAULT: Server=db;Port=3306;Database=myshowbook;User=myshowbook;Password=myshowbook_dev;
+          JWT_KEY: local-development-jwt-key-change-this-value-1234567890
+          JWT_ISSUER: MyShowBook
+          JWT_AUDIENCE: MyShowBook
+          JWT_EXPIRY_MINUTES: 60
+        run: |
+          set -euo pipefail
+          docker compose down -v --remove-orphans || true
+          docker compose up -d --build
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/health/live >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8080/health/live
+          curl -fsS http://localhost:8080/health/ready
+          docker compose ps
+
+      - name: Run functional and concurrency QA suite
+        run: |
+          set -euo pipefail
+          BASE=http://localhost:8080
+          TMP=$(mktemp -d)
+          trap 'docker compose logs --no-color || true; docker compose down -v --remove-orphans || true' EXIT
+
+          fail() { echo "FAIL: $*" >&2; exit 1; }
+          assert_code() {
+            expected="$1"; actual="$2"; label="$3"
+            [ "$actual" = "$expected" ] || fail "$label expected HTTP $expected got $actual"
+            echo "PASS: $label -> HTTP $actual"
+          }
+          post_json() {
+            url="$1"; body="$2"; token="${3:-}"
+            if [ -n "$token" ]; then
+              curl -sS -o "$TMP/body" -w "%{http_code}" -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -X POST "$url" -d "$body"
+            else
+              curl -sS -o "$TMP/body" -w "%{http_code}" -H 'Content-Type: application/json' -X POST "$url" -d "$body"
+            fi
+          }
+          login() {
+            user="$1"; pass="$2"
+            code=$(post_json "$BASE/auth/token" "{\"username\":\"$user\",\"password\":\"$pass\"}")
+            assert_code 200 "$code" "login $user"
+            jq -r .access_token "$TMP/body"
+          }
+          create_show() {
+            seats="$1"; price="$2"
+            code=$(post_json "$BASE/shows" "{\"name\":\"qa-$RANDOM\",\"seats\":$seats,\"price_paise\":$price}" "$ADMIN")
+            assert_code 201 "$code" "create show"
+            jq -r .show_guid "$TMP/body"
+          }
+          reserve() {
+            show="$1"; token="$2"; seats="$3"; key="$4"
+            post_json "$BASE/shows/$show/reserve" "{\"seats\":$seats,\"idempotency_key\":\"$key\"}" "$token"
+          }
+          get_show() {
+            show="$1"
+            curl -sS -o "$TMP/show" "$BASE/shows/$show"
+            jq -e '.available_seats + .held_seats + .confirmed_seats == .total_seats' "$TMP/show" >/dev/null || fail "reconciliation invariant failed"
+          }
+
+          ADMIN=$(login admin 'admin123!')
+          USER1=$(login user1 'user123!')
+          USER2=$(login user2 'user456!')
+          USER3=$(login user3 'user789!')
+
+          echo '--- Authorization and validation ---'
+          code=$(post_json "$BASE/shows" '{"name":"unauthorized","seats":["A1"],"price_paise":100}' "$USER1")
+          assert_code 403 "$code" "non-admin cannot create show"
+          SHOW=$(create_show '["A1","A2","A3","A4","A5","A6","A7","A8","A9","A10"]' 25000)
+          get_show "$SHOW"
+          jq -e '.total_seats == 10 and .available_seats == 10 and .held_seats == 0 and .confirmed_seats == 0' "$TMP/show" >/dev/null || fail "fresh show state incorrect"
+          echo "PASS: fresh show state"
+
+          echo '--- Single booking, idempotency, same-key conflict ---'
+          code=$(reserve "$SHOW" "$USER1" '["A1"]' 'qa-idem-1')
+          assert_code 201 "$code" "first reservation"
+          RID=$(jq -r .reservation_id "$TMP/body")
+          AMOUNT=$(jq -r .amount_paise "$TMP/body")
+          [ "$AMOUNT" = "25000" ] || fail "integer paise amount incorrect"
+          code=$(reserve "$SHOW" "$USER1" '["A1"]' 'qa-idem-1')
+          assert_code 200 "$code" "idempotent replay"
+          [ "$(jq -r .reservation_id "$TMP/body")" = "$RID" ] || fail "idempotent replay returned different reservation"
+          code=$(reserve "$SHOW" "$USER1" '["A2"]' 'qa-idem-1')
+          assert_code 409 "$code" "same key different body"
+          code=$(reserve "$SHOW" "$USER2" '["A1"]' 'qa-other-user-seat'
+          )"
+          assert_code 409 "$code" "already taken seat"
+          get_show "$SHOW"
+
+          echo '--- Invalid multi-seat request is all-or-nothing ---'
+          code=$(reserve "$SHOW" "$USER2" '["A3","NO_SUCH_SEAT"]' 'qa-invalid-multi')
+          assert_code 400 "$code" "invalid seat"
+          get_show "$SHOW"
+          jq -e '.confirmed_seats == 1 and .available_seats == 9' "$TMP/show" >/dev/null || fail "invalid multi-seat request changed state"
+
+          echo '--- Per-user limit under parallel requests ---'
+          LIMIT_SHOW=$(create_show '["B1","B2","B3","B4","B5","B6","B7","B8","B9","B10"]' 10000)
+          rm -f "$TMP/limit_codes"
+          seq 1 10 | xargs -P 10 -I{} sh -c 'curl -sS -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer '"$USER1"'" -H "Content-Type: application/json" -X POST "'"$BASE"'/shows/'"$LIMIT_SHOW"'/reserve" -d "{\"seats\":[\"B{}\"],\"idempotency_key\":\"qa-limit-{}\"}"' >> "$TMP/limit_codes"
+          wins=$(grep -c '^201$' "$TMP/limit_codes" || true)
+          declines=$(grep -c '^409$' "$TMP/limit_codes" || true)
+          [ "$wins" = "4" ] || fail "per-user limit expected 4 confirmed, got $wins"
+          [ "$declines" = "6" ] || fail "per-user limit expected 6 conflicts, got $declines"
+          get_show "$LIMIT_SHOW"
+          jq -e '.confirmed_seats == 4 and .available_seats == 6 and .confirmed_seats + .available_seats + .held_seats == .total_seats' "$TMP/show" >/dev/null || fail "per-user reconciliation failed"
+          echo "PASS: per-user limit -> 4 wins / 6 declines"
+
+          echo '--- Owner-only cancellation and re-bookability ---'
+          code=$(curl -sS -o "$TMP/body" -w "%{http_code}" -H "Authorization: Bearer $USER1" -X POST "$BASE/reservations/$RID/cancel")
+          assert_code 200 "$code" "owner cancellation"
+          code=$(curl -sS -o "$TMP/body" -w "%{http_code}" -H "Authorization: Bearer $USER2" -X POST "$BASE/reservations/$RID/cancel")
+          assert_code 404 "$code" "non-owner cannot cancel"
+          code=$(reserve "$SHOW" "$USER2" '["A1"]' 'qa-rebook-after-cancel')
+          assert_code 201 "$code" "released seat can be rebooked"
+          get_show "$SHOW"
+          jq -e '.confirmed_seats == 1 and .available_seats == 9' "$TMP/show" >/dev/null || fail "post-cancel reconciliation failed"
+
+          echo '--- Hot-seat stampede: 20,000 unique attempts ---'
+          STORM_SHOW=$(create_show '["H1","H2","H3"]' 5000)
+          rm -f "$TMP/storm_codes"
+          seq 1 20000 | xargs -P 200 -I{} sh -c 'curl -sS -o /dev/null --connect-timeout 10 --max-time 90 -w "%{http_code}\n" -H "Authorization: Bearer '"$USER2"'" -H "Content-Type: application/json" -X POST "'"$BASE"'/shows/'"$STORM_SHOW"'/reserve" -d "{\"seats\":[\"H1\"],\"idempotency_key\":\"qa-storm-{}\"}"' >> "$TMP/storm_codes"
+          total=$(wc -l < "$TMP/storm_codes")
+          wins=$(grep -c '^201$' "$TMP/storm_codes" || true)
+          conflicts=$(grep -c '^409$' "$TMP/storm_codes" || true)
+          errors=$(grep -Ev '^(201|409)$' "$TMP/storm_codes" | wc -l)
+          [ "$total" = "20000" ] || fail "hot-seat did not complete all 20000 requests; got $total"
+          [ "$wins" = "1" ] || fail "hot-seat expected exactly 1 winner, got $wins"
+          [ "$conflicts" = "19999" ] || fail "hot-seat expected 19999 conflicts, got $conflicts"
+          [ "$errors" = "0" ] || fail "hot-seat produced non-201/409 responses: $errors"
+          get_show "$STORM_SHOW"
+          jq -e '.confirmed_seats == 1 and .available_seats == 2 and .held_seats == 0' "$TMP/show" >/dev/null || fail "hot-seat final state incorrect"
+          echo "PASS: 20,000 hot-seat attempts -> 1 winner / 19,999 conflicts / 0 errors"
+
+          echo '--- Metrics reconciliation ---'
+          curl -fsS "$BASE/metrics" > "$TMP/metrics"
+          grep -q '^reservations_confirmed_total ' "$TMP/metrics" || fail "confirmed metric missing"
+          grep -q 'reservations_declined_total{reason="seat-taken"}' "$TMP/metrics" || fail "seat-taken metric missing"
+          grep -q 'reservations_declined_total{reason="per-user-limit"}' "$TMP/metrics" || fail "per-user-limit metric missing"
+          grep -q 'reservations_declined_total{reason="idempotent-replay"}' "$TMP/metrics" || fail "idempotent-replay metric missing"
+          grep -q "seats_available{show_id=\"$STORM_SHOW\"} 2" "$TMP/metrics" || fail "available-seat metric does not reconcile for storm show"
+          echo "PASS: metrics exposed and storm-show available gauge reconciles"
+
+          echo '--- Final API state ---'
+          curl -fsS "$BASE/shows/$STORM_SHOW" | jq .
+          echo "ALL QA TESTS PASSED"
