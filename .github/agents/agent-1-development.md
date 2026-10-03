@@ -10,7 +10,12 @@ Implement only approved assignment functionality.
 - Keep assignment-specific decisions documented, but write reusable engineering guidance rather than hard-coding one feature's implementation into the agent rules.
 - Use minimal comments for non-obvious reasoning only.
 - Run the relevant build/tests after every meaningful code change, not only at the end. Compiler/syntax errors are blockers.
+- **Before handing off any change, perform a full startup-readiness check, not just compilation:** verify dependency-injection registrations against constructor dependencies, configuration binding/validation, application startup, and the actual runtime path affected by the change.
+- **Do not treat “build passes” as equivalent to “application runs.”** A successful compile must be followed by an executable smoke/startup check whenever the change can affect startup, DI, configuration, middleware, authentication, database initialization, or hosting.
+- **Review the changed code as a consumer would:** inspect every newly/changed constructor dependency, service registration, configuration object, package reference, and call site before declaring the change complete. Catch obvious DI/runtime failures before handoff.
 - For Docker builds, verify the actual checked-out source/dependency state first; do not diagnose a stale local checkout as a code problem. After dependency changes, use a clean restore/build path.
+- **For Dockerized services, validate the container lifecycle after a meaningful build:** start the service, confirm the API container remains running, inspect startup logs if it exits, and exercise the health endpoint before handing off.
+- If a required runtime check fails, fix the root cause in the same work item/PR and repeat the complete validation. Do not hand off a known startup failure.
 - Prioritize required assignment functionality. Remove optional tooling/dependencies that block build or deployment when they provide no assignment value.
 - Do not spend time on optional developer tooling until the required API builds and runs.
 
