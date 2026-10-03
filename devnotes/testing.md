@@ -1,30 +1,44 @@
 # Testing
 
-## Current smoke checks
-- API container starts after MySQL becomes healthy.
-- liveness endpoint returns 200.
-- readiness checks the database dependency.
-- metrics endpoint renders counters and per-show available-seat gauges.
-- token issuance works for seeded development users.
-- create/get/reserve/cancel flows will be exercised after local Docker startup.
+## Current review/smoke coverage
 
-## Required correctness tests
-- create show and all seats available
-- successful single/multi-seat reservation
-- invalid show/seat
-- unavailable seat
+The implementation is intended to be tested manually against the running Docker Compose API rather than adding a separate test project at this stage.
+
+### Basic API flow
+- health/live returns 200
+- health/ready returns 200 when MySQL is reachable
+- metrics endpoint returns Prometheus-style output
+- admin login returns a JWT
+- normal user login returns a JWT
+- admin can create a show
+- normal user cannot create a show
+- show can be read without authentication
+- authenticated user can reserve
+- authenticated owner can cancel
+
+### Reservation behavior
+- single-seat reservation
+- multi-seat reservation
+- invalid show
+- invalid seat
+- already confirmed seat
 - all-or-nothing multi-seat request
-- default per-user limit of 4
-- concurrent per-user limit
-- owner cancellation
-- non-owner cancellation rejected
-- cancelled seat can be booked again
-- same idempotency key + same body returns original reservation
-- same idempotency key + different seats returns 409
-- concurrent duplicate-key requests create one reservation
-- hot-seat storm
-- overlapping multi-seat storm
-- approximately 20,000 concurrent attempts
-- zero unexpected 5xx
-- reconciliation invariant before/during/after burst
-- correlation ID in logs
+- per-user limit of 4
+- same idempotency key + same normalized seat set
+- same idempotency key + different seat set
+- cancellation by owner
+- cancellation by another user
+- cancellation replay
+- cancelled seat can be reserved again
+
+### Concurrency checks to run later
+- many users targeting one hot seat
+- overlapping multi-seat requests
+- same user firing more than four concurrent seats
+- concurrent retries using the same idempotency key
+- large burst with approximately 20,000 requests
+- zero unexpected 5xx responses
+- final available + held + confirmed == total
+- metrics available-seat gauge matches GET /shows state
+
+No load-test or test project is being added yet. These checks can be performed against the running service using curl or a temporary external script.
