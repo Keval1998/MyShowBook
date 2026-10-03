@@ -6,3 +6,4 @@
 - Idempotency: persist the key so process restarts and multiple instances cannot lose the correctness boundary.
 - Reconciliation: derive show counts from seat state and maintain available + held + confirmed == total.
 - Deployability: Docker Compose should make a clean checkout runnable with one command.
+- Runtime validation: a successful compile does not validate ASP.NET Core dependency injection. A startup failure exposed a missing direct DI registration for JwtOptions consumed by JwtTokenService. The workflow now requires constructor-to-registration checks plus actual container startup and health verification before handoff.

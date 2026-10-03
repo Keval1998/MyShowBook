@@ -19,6 +19,8 @@ var jwtOptions = builder.Configuration
 if (string.IsNullOrWhiteSpace(jwtOptions.Key) || jwtOptions.Key.Length < 32)
     throw new InvalidOperationException("Jwt:Key must be at least 32 characters.");
 
+builder.Services.AddSingleton(jwtOptions);
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
