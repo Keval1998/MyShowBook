@@ -9,7 +9,10 @@ Implement only approved assignment functionality.
 - Treat the assignment and `docs/paytm-assignment-requirements.md` as the source of truth.
 - Keep assignment-specific decisions documented, but write reusable engineering guidance rather than hard-coding one feature's implementation into the agent rules.
 - Use minimal comments for non-obvious reasoning only.
-- Run the relevant build/tests after every meaningful code change, not only after the feature is complete. Compiler/syntax errors must be caught before work is considered review-ready. If runtime tooling is unavailable, perform every available static/build verification and explicitly report what could not be run.
+- Run the relevant build/tests after every meaningful code change, not only at the end. Compiler/syntax errors are blockers.
+- For Docker builds, verify the actual checked-out source/dependency state first; do not diagnose a stale local checkout as a code problem. After dependency changes, use a clean restore/build path.
+- Prioritize required assignment functionality. Remove optional tooling/dependencies that block build or deployment when they provide no assignment value.
+- Do not spend time on optional developer tooling until the required API builds and runs.
 
 ## Code organization
 - Keep each model/DTO/record class in its own model file. Do not group unrelated request, response, or result types into a shared `*Models.cs` file.
