@@ -68,4 +68,4 @@ src/MyshowBook/Api/Helpers — application logic
 src/MyshowBook/Api/Models — request/response/result models
 src/MyshowBook/Api/Utility — shared infrastructure
 
-Run the assignment burst with `./scripts/burst.sh http://localhost:8080` (default 20,000 attempts). Set `BURST_COUNT` to change the load and `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`USER_USERNAME`/`USER_PASSWORD` for non-default credentials.
+Run the assignment burst with `bash scripts/burst.sh http://localhost:8080` (default 20,000 attempts). Set `BURST_COUNT` to change the load and `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`USER_USERNAME`/`USER_PASSWORD` for non-default credentials.
