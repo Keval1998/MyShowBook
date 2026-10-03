@@ -51,7 +51,7 @@ public sealed class ReservationHelper(
             cancellationToken);
     }
 
-    public Task<ReservationResult> CancelAsync(
+    public Task<CancellationResult> CancelAsync(
         Guid userGuid,
         Guid reservationGuid,
         CancellationToken cancellationToken) =>
@@ -82,7 +82,7 @@ public sealed class ReservationHelper(
         return new ReservationResult(outcome, reservation);
     }
 
-    private static async Task<ReservationResult> ReadCancellationResultAsync(
+    private static async Task<CancellationResult> ReadCancellationResultAsync(
         MySqlConnector.MySqlDataReader reader,
         CancellationToken cancellationToken)
     {
@@ -94,14 +94,10 @@ public sealed class ReservationHelper(
         var outcome = (CancellationOutcome)reader.GetInt32(0);
 
         if (outcome != CancellationOutcome.Cancelled)
-            return new ReservationResult(
-                ReservationOutcome.InvalidSeat,
-                null);
+            return new CancellationResult(outcome, null);
 
         var reservation = await ReadReservationAsync(reader, cancellationToken);
-        return new ReservationResult(
-            ReservationOutcome.Confirmed,
-            reservation);
+        return new CancellationResult(outcome, reservation);
     }
 
     private static async Task SkipLockResultAsync(
