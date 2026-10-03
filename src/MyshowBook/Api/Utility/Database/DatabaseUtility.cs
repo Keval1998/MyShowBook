@@ -28,6 +28,35 @@ public sealed class DatabaseUtility(IConfiguration configuration)
         return await readResult(reader, cancellationToken);
     }
 
+    public async Task<T> ExecuteProcedureWithTransientRetryAsync<T>(
+        string procedureName,
+        IReadOnlyCollection<MySqlParameter> parameters,
+        Func<MySqlDataReader, CancellationToken, Task<T>> readResult,
+        Func<MySqlConnection, CancellationToken, Task>? prepareConnection = null,
+        CancellationToken cancellationToken = default)
+    {
+        const int maxAttempts = 3;
+
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await ExecuteProcedureAsync(
+                    procedureName,
+                    parameters,
+                    readResult,
+                    prepareConnection,
+                    cancellationToken);
+            }
+            catch (MySqlException ex) when (
+                attempt < maxAttempts &&
+                (ex.Number == 1205 || ex.Number == 1213))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(25 * attempt), cancellationToken);
+            }
+        }
+    }
+
     public async Task<bool> CanConnectAsync(CancellationToken cancellationToken)
     {
         try
