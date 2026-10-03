@@ -14,6 +14,7 @@ CREATE PROCEDURE sp_cancel_reservation(
 BEGIN
     DECLARE v_user_id BIGINT DEFAULT NULL;
     DECLARE v_reservation_id BIGINT DEFAULT NULL;
+    DECLARE v_show_id BIGINT DEFAULT NULL;
     DECLARE v_status_id INT DEFAULT NULL;
     DECLARE v_seat_count INT DEFAULT 0;
     DECLARE v_confirmed_count INT DEFAULT 0;
@@ -35,8 +36,8 @@ BEGIN
         ROLLBACK;
         SELECT 2 AS Outcome;
     ELSE
-        SELECT Id, StatusId
-        INTO v_reservation_id, v_status_id
+        SELECT Id, ShowId, StatusId
+        INTO v_reservation_id, v_show_id, v_status_id
         FROM Reservations
         WHERE ReservationGuid = p_reservation_guid
           AND UserId = v_user_id
@@ -72,9 +73,10 @@ BEGIN
             ORDER BY se.SeatNumber;
         ELSE
             SELECT se.Id, se.SeatNumber, se.StatusId
-            FROM ReservationSeats rs
-            JOIN Seats se ON se.Id = rs.SeatId
-            WHERE rs.ReservationId = v_reservation_id
+            FROM Seats se FORCE INDEX (UX_Seats_Show_SeatNumber)
+            JOIN ReservationSeats rs ON rs.SeatId = se.Id
+            WHERE se.ShowId = v_show_id
+              AND rs.ReservationId = v_reservation_id
             ORDER BY se.SeatNumber
             FOR UPDATE;
 
