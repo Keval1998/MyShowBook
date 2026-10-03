@@ -37,7 +37,7 @@ Reservation decisions are made inside MySQL/InnoDB transactions.
 The booking procedure:
 1. locks the authenticated user's row;
 2. checks persisted idempotency before making a new decision;
-3. locks requested seat rows in deterministic internal-ID order;
+3. locks requested seat rows in deterministic seat-number order using the show/seat unique index;
 4. validates all seats and the per-user limit;
 5. creates the reservation and seat mappings in the same transaction;
 6. commits once, or rolls back the complete request.
