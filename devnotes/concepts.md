@@ -22,7 +22,7 @@ Why use it here:
 - If the client disconnects or the server cancels the request, database/network waits should not continue unnecessarily.
 - It keeps async operations cancellable without creating custom cancellation logic.
 
-It does not automatically stop arbitrary CPU code. The called operation must support and observe the token.
+It does not automatically stop arbitrary CPU code. The called operation must support and observe the token. .NET describes this as cooperative cancellation between the caller and the operation. citeturn9search0turn9search1
 
 ## 2. How are seat numbers provided?
 
