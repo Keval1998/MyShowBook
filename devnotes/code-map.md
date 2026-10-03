@@ -1,23 +1,28 @@
 # Code Map
 
 ## API
+
 - src/MyshowBook/Api/Controllers — HTTP endpoints.
-- src/MyshowBook/Api/Services — application/database orchestration.
-- src/MyshowBook/Api/Database — MySQL connection, stored procedure, and temp-table helpers.
-- src/MyshowBook/Api/Authentication — minimal JWT token handling.
-- src/MyshowBook/Api/Models — request/response contracts.
-- src/MyshowBook/Api/Constants — stored procedure and temp-table names.
-- src/MyshowBook/Api/Enums — database status/metric enums.
-- src/MyshowBook/Api/Helpers — hashing, identity, and reader helpers.
-- src/MyshowBook/Api/Middleware — correlation IDs.
+- src/MyshowBook/Api/Helpers — assignment business/application helpers. There is intentionally no Services folder.
+- src/MyshowBook/Api/Models — all HTTP request/response/result models.
+- src/MyshowBook/Api/Enums — integer result/status enums.
+- src/MyshowBook/Api/Utility — shared infrastructure utilities.
+- src/MyshowBook/Api/Utility/Authentication — JWT configuration and token creation.
+- src/MyshowBook/Api/Utility/Database — connection, stored-procedure execution, and temporary-table utilities.
+- src/MyshowBook/Api/Constants — stored procedure and temporary-table names.
+- src/MyshowBook/Api/Middleware — correlation ID middleware.
 
 ## Database
-- database/init — table creation.
-- database/seed — enum and development user data.
-- database/migrations — stored procedures.
-- database/00-run-init.sh — executes the three database folders in order during first MySQL initialization.
+
+- database/init — initial table definitions.
+- database/seed — enum rows and development users.
+- database/functions — one stored-procedure file per procedure.
+- database/migrations — future versioned ALTER/schema migrations.
+- database/00-run-init.sh — executes init, seed, functions, then migrations.
 
 ## Planned
-- tests — automated correctness/concurrency tests.
-- load-tests — one-command high-concurrency burst.
-- final deployment and WRITEUP completion.
+
+- concurrency verification against the running API
+- one-command burst script only if it becomes necessary for final assignment validation
+- public deployment
+- final WRITEUP completion
