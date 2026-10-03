@@ -6,6 +6,8 @@ services:
       MYSQL_USER: myshowbook
       MYSQL_PASSWORD: myshowbook_dev
       MYSQL_ROOT_PASSWORD: root_dev
+    volumes:
+      - ./database:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -proot_dev --silent"]
       interval: 5s
@@ -21,6 +23,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__Default: "Server=db;Port=3306;Database=myshowbook;User=myshowbook;Password=myshowbook_dev;"
+      Jwt__Key: "local-development-key-change-in-deployment-please-1234567890"
+      Jwt__Issuer: "MyShowBook"
+      Jwt__Audience: "MyShowBook"
     depends_on:
       db:
         condition: service_healthy
