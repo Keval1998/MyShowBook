@@ -1,0 +1,12 @@
+.git
+.github
+.vscode
+.vs
+bin
+obj
+tests
+load-tests
+devnotes
+docs
+*.user
+*.suo

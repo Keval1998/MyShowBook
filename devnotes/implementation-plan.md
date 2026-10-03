@@ -16,4 +16,4 @@
 14. Complete WRITEUP.md and final README.
 15. Final Agent 2 → Agent 3 → Agent 4 review.
 
-Docker is intentionally early so the application is exercised in the same environment throughout development.
+Current milestone: Docker/runtime foundation and liveness.
