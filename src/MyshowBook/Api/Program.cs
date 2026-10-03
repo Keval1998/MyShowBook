@@ -47,7 +47,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
-builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<DatabaseUtility>();
 builder.Services.AddSingleton<TemporaryTableUtility>();
@@ -62,9 +61,6 @@ var app = builder.Build();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
-
-if (app.Environment.IsDevelopment())
-    app.MapOpenApi();
 
 app.MapControllers();
 
