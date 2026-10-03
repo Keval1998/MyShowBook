@@ -6,6 +6,8 @@ services:
       MYSQL_USER: myshowbook
       MYSQL_PASSWORD: myshowbook_dev
       MYSQL_ROOT_PASSWORD: root_dev
+    ports:
+      - "3306:3306"
     volumes:
       - ./database:/docker-entrypoint-initdb.d:ro
     healthcheck:
