@@ -101,7 +101,7 @@ BEGIN
                 FROM tmp_reservation_seats;
 
                 SELECT se.Id, se.SeatNumber, se.StatusId
-                FROM Seats se
+                FROM Seats se FORCE INDEX (UX_Seats_Show_SeatNumber)
                 JOIN tmp_reservation_seats requested
                   ON requested.SeatNumber = se.SeatNumber
                 WHERE se.ShowId = v_show_id
