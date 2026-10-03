@@ -9,7 +9,7 @@ Implement only approved assignment functionality.
 - Treat the assignment and `docs/paytm-assignment-requirements.md` as the source of truth.
 - Keep assignment-specific decisions documented, but write reusable engineering guidance rather than hard-coding one feature's implementation into the agent rules.
 - Use minimal comments for non-obvious reasoning only.
-- Run relevant tests or verification after meaningful changes; never claim runtime verification that was not actually performed.
+- Run the relevant build/tests after every meaningful code change, not only after the feature is complete. Compiler/syntax errors must be caught before work is considered review-ready. If runtime tooling is unavailable, perform every available static/build verification and explicitly report what could not be run.
 
 ## Code organization
 - Keep each model/DTO/record class in its own model file. Do not group unrelated request, response, or result types into a shared `*Models.cs` file.
