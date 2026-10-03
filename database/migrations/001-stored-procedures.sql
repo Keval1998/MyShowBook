@@ -183,11 +183,11 @@ BEGIN
                     BEGIN
                         DECLARE seat_cursor CURSOR FOR
                             SELECT se.Id, se.StatusId
-                            FROM Seats se
+                            FROM Seats se FORCE INDEX (UX_Seats_Show_SeatNumber)
                             JOIN tmp_reservation_seats requested
                               ON requested.SeatNumber = se.SeatNumber
                             WHERE se.ShowId = v_show_id
-                            ORDER BY se.Id
+                            ORDER BY se.SeatNumber
                             FOR UPDATE;
                         DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
 
@@ -277,6 +277,9 @@ BEGIN
     DECLARE v_status_id INT DEFAULT NULL;
     DECLARE v_seat_count INT DEFAULT 0;
     DECLARE v_updated_count INT DEFAULT 0;
+    DECLARE v_seat_id BIGINT;
+    DECLARE v_seat_status INT;
+    DECLARE v_done INT DEFAULT 0;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -327,13 +330,37 @@ BEGIN
             FROM ReservationSeats
             WHERE ReservationId = v_reservation_id;
 
-            UPDATE Seats se
-            JOIN ReservationSeats rs ON rs.SeatId = se.Id
-            SET se.StatusId = 1
-            WHERE rs.ReservationId = v_reservation_id
-              AND se.StatusId = 3;
+            BEGIN
+                DECLARE seat_cursor CURSOR FOR
+                    SELECT se.Id, se.StatusId
+                    FROM Seats se FORCE INDEX (UX_Seats_Show_SeatNumber)
+                    JOIN ReservationSeats rs ON rs.SeatId = se.Id
+                    WHERE rs.ReservationId = v_reservation_id
+                    ORDER BY se.SeatNumber
+                    FOR UPDATE;
+                DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
 
-            SET v_updated_count = ROW_COUNT();
+                OPEN seat_cursor;
+
+                cancel_seats: LOOP
+                    FETCH seat_cursor INTO v_seat_id, v_seat_status;
+
+                    IF v_done = 1 THEN
+                        LEAVE cancel_seats;
+                    END IF;
+
+                    IF v_seat_status <> 3 THEN
+                        SET v_updated_count = -1;
+                    ELSE
+                        UPDATE Seats
+                        SET StatusId = 1
+                        WHERE Id = v_seat_id;
+                        SET v_updated_count = v_updated_count + 1;
+                    END IF;
+                END LOOP;
+
+                CLOSE seat_cursor;
+            END;
 
             IF v_updated_count <> v_seat_count THEN
                 ROLLBACK;
