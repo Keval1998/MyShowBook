@@ -1,13 +1,14 @@
 # Interview Notes
 
-Reservation explanation:
-1. Authenticate the user.
-2. Start one DB transaction.
-3. Resolve GUIDs and lock required rows.
-4. Lock requested seats in deterministic order.
-5. Check availability and MaxSeats.
-6. Persist reservation and seat mappings.
-7. Commit.
-8. Return reservation.
+Reservation path:
+1. Authenticate and derive user identity from the token.
+2. Start one MySQL transaction.
+3. Resolve GUIDs to internal IDs.
+4. Lock user/show state needed for the booking limit.
+5. Lock requested seats in deterministic order.
+6. Check idempotency, seat state, ownership, and limit.
+7. Write reservation and seat mappings atomically.
+8. Commit.
+9. Return 201 or a clean 4xx domain outcome.
 
-Key trade-off: stored procedures keep concurrency-critical work close to MySQL locking semantics without introducing an ORM or unnecessary abstraction.
+The key design decision is putting the atomic booking decision at the database boundary instead of using an application-level read-then-write sequence.

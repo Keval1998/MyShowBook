@@ -1,42 +1,47 @@
 # MyShowBook
 
-Backend take-home assignment implementation for a seat reservation system.
-
-## Overview
-
-MyShowBook exposes a small ASP.NET Core Web API for shows, seats, reservations, and cancellation. The main engineering focus is correctness when many users attempt to reserve the same seat concurrently.
-
-## Technology
-
-- ASP.NET Core Web API
-- .NET 10 (current project target)
-- MySQL 8 / InnoDB
-- Docker / Docker Compose
-- Automated .NET tests
-- Python asyncio/aiohttp concurrency test
-
-## Key Design Goals
-
-- Atomic multi-seat reservations
-- No double booking under concurrency
-- Database-backed transaction and row locking
-- Durable idempotency
-- Per-show booking limit
-- JWT-based user identity
-- Simple health/readiness and metrics
-- Minimal assignment-focused architecture
-
-## Data Access
-
-EF Core is intentionally not used by default. Concurrency-critical operations use MySQL stored procedures so transaction and locking behavior remain explicit.
-
-## Identifiers
-
-The API uses public GUIDs: UserGuid, ShowGuid, SeatGuid, and ReservationGuid. The database may use internal numeric IDs for efficient relationships.
+Backend take-home assignment implementation for a seat reservation service.
 
 ## Quick Start
 
-See [docs/setup.md](docs/setup.md).
+A clean checkout should run with Docker:
+
+```bash
+docker compose up --build
+```
+
+Stop with `docker compose down`. Reset local data with `docker compose down -v`.
+
+## Assignment
+
+The service implements Paytm's Seat Reservation at Scale exercise: atomic assigned-seat reservation under concurrency, per-user limits, durable idempotency, owner-only cancellation, reconciliation, health/readiness, Prometheus metrics, structured logs, a one-command burst test, and public deployment.
+
+## Core API
+
+```text
+POST /shows
+POST /shows/{id}/reserve
+POST /reservations/{id}/cancel
+GET  /shows/{id}
+GET  /health/live
+GET  /health/ready
+GET  /metrics
+```
+
+Identity comes from the authentication token. Money is integer paise, never floating point.
+
+## Correctness
+
+Reservation decisions are atomic in MySQL/InnoDB. Requested seats are locked in deterministic order. Multi-seat requests use all-or-nothing semantics: if any requested seat is unavailable or invalid, the whole request is declined.
+
+Public API identifiers use `UserGuid`, `ShowGuid`, `SeatGuid`, and `ReservationGuid`; internal numeric IDs may be used for database relationships.
+
+## Documentation
+
+- [Setup](docs/setup.md)
+- [Architecture](docs/architecture.md)
+- [Assignment requirements](docs/paytm-assignment-requirements.md)
+- [Write-up](WRITEUP.md)
 
 ## Tests
 
@@ -44,27 +49,23 @@ See [docs/setup.md](docs/setup.md).
 dotnet test
 ```
 
-The high-concurrency reservation scenario is covered by a dedicated load-test script.
+The high-concurrency burst test lives under `load-tests/` and reports confirmed, decline reasons, 5xx responses, and final reconciliation.
+
+## AI Usage
+
+AI tools are used as engineering assistants for requirement analysis, design discussion, implementation support, code review, testing strategy, and documentation. Human review remains responsible for final decisions and submitted code. Details are documented in `WRITEUP.md`.
 
 ## Repository Structure
 
 ```text
-.github/
-  agents/
-  skills/
-  AGENT-WORKFLOW.md
-database/
-devnotes/
-docs/
-load-tests/
-src/
-tests/
+.github/       agent roles and skills
+database/      MySQL schema, seed data, stored procedures
+devnotes/      persistent engineering context
+docs/          setup, architecture, assignment requirements
+load-tests/    concurrency burst test
+src/           API source
+tests/         automated tests
+Dockerfile
+docker-compose.yml
+WRITEUP.md
 ```
-
-## Scope
-
-This project intentionally avoids UI, payment integration, messaging infrastructure, Redis, Kubernetes, Terraform, microservices, and other functionality not required to demonstrate the assignment's core backend concerns.
-
-## Assignment Source
-
-docs/paytm-assignment-requirements.md contains the current working requirement interpretation. If the original assignment email/spec is added to the repository, it becomes authoritative and this document will be reconciled against it.

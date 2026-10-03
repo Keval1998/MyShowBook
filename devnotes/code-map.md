@@ -1,17 +1,16 @@
 # Code Map
 
 ## Current
-- src/MyshowBook/Api — current ASP.NET Core API project.
+- src/MyshowBook/Api — ASP.NET Core API project.
 
 ## Planned
-- src/MyshowBook/Api/Controllers — API endpoints.
+- src/MyshowBook/Api/Controllers — JSON API endpoints.
 - src/MyshowBook/Api/Services — application logic.
-- src/MyshowBook/Api/Database — connection and stored-procedure utilities.
-- src/MyshowBook/Api/Models — request/response/domain models.
+- src/MyshowBook/Api/Database — connection, stored-procedure, and temporary-table utilities.
+- src/MyshowBook/Api/Authentication — minimal JWT handling.
+- src/MyshowBook/Api/Models — request/response models.
 - database — schema, seed data, stored procedures.
 - tests — automated tests.
-- load-tests — high-concurrency test.
-- devnotes — persistent engineering context.
-- docs — assignment and setup documentation.
-- .github/agents — four logical agent roles.
-- .github/skills — reusable role-specific instructions.
+- load-tests — one-command concurrency burst.
+- Dockerfile / docker-compose.yml — reproducible runtime.
+- WRITEUP.md — final assignment write-up.

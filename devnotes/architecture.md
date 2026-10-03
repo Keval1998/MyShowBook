@@ -1,10 +1,13 @@
 # Architecture
 
 - ASP.NET Core Web API with MySQL 8/InnoDB.
+- Docker Compose is the primary clean-checkout setup path.
 - No EF Core by default.
 - Stored procedures own concurrency-critical transactions.
-- Public GUID columns: UserGuid, ShowGuid, SeatGuid, ReservationGuid.
-- Internal numeric IDs are used for relationships.
-- Resolve GUIDs to internal IDs in the same DB transaction where applicable.
-- Lock user/seat rows deterministically.
-- Use connection-scoped temporary tables for multi-row SP inputs.
+- Public GUIDs: UserGuid, ShowGuid, SeatGuid, ReservationGuid.
+- Internal numeric IDs support relationships and locking.
+- GUID resolution occurs within the same DB transaction/session where required.
+- Requested seats are locked deterministically.
+- Multi-seat requests are all-or-nothing.
+- Idempotency is persisted in the database.
+- Explicit owner-only cancellation is used instead of automatic expiry.

@@ -1,72 +1,75 @@
 # Paytm Assignment Requirements
 
-> Working requirement record reconstructed from the assignment discussion. If the original Paytm email/spec is added to the repository, it supersedes this document.
+This document is based on the supplied Paytm assignment email and is the implementation source of truth.
 
-## Required Scope
-- Backend Web API.
-- Required show/event creation and retrieval.
-- Seat availability.
-- Seat reservation.
-- Required reservation cancellation/details.
-- JWT authentication.
-- Per-show MaxSeats booking limit.
-- Atomic multi-seat reservation.
-- No double booking under concurrent requests.
-- MySQL 8 / InnoDB transaction and row locking.
-- Idempotent reservation retry behavior.
-- Liveness/readiness and required metrics/observability.
-- Automated tests.
-- High-concurrency reservation testing; 20,000 concurrent attempts is the discussed target.
-- Docker/Docker Compose.
-- Clean README and setup/write-up documentation.
+## Functional API
 
-## Correctness
-The database is the inventory source of truth.
+### POST /shows
+Admin endpoint. Request contains `name`, assigned seat names, and `price_paise`. Created seats start as available.
 
-For a multi-seat reservation:
-- all seats must belong to the target show;
-- all requested seats must be available;
-- the booking limit must be respected;
-- either all requested seats are reserved or none;
-- concurrent attempts cannot create multiple successful reservations for one seat.
+### POST /shows/{id}/reserve
+Authenticated endpoint. Request contains requested seats and an idempotency key. Identity comes from the auth token, not the body.
 
-## Idempotency
-Persist the idempotency boundary in the database.
+Required behavior:
+- no seat can be confirmed for two users;
+- hot-seat races produce one 201 and clean 409 declines;
+- expected booking conflicts never become 5xx;
+- default per-user limit is 4 seats per show;
+- the limit holds under concurrency;
+- same key and same request returns the original reservation;
+- same key with different requested seats returns 409;
+- multi-seat behavior must be explicitly defined and concurrency-safe.
 
-For the same user and idempotency key:
-- the same request returns the same logical reservation result;
-- a different request is rejected as a conflict.
+This implementation chooses **all-or-nothing** multi-seat behavior: if any requested seat is invalid or unavailable, no seat from that request is reserved.
 
-A database uniqueness constraint is the durable race-safety boundary.
+### POST /reservations/{id}/cancel
+This implementation chooses explicit owner-only cancellation rather than time-boxed expiry. A cancelled seat becomes available again and cancellation cannot overwrite another user's confirmed reservation.
 
-## Data Access
-No EF Core by default. Prefer stored procedures for concurrency-critical operations.
+### GET /shows/{id}
+Returns per-seat state and counts. The reconciliation invariant is always:
 
-## Identifiers
-Public GUID columns:
-- UserGuid
-- ShowGuid
-- SeatGuid
-- ReservationGuid
+`available + held + confirmed == total_seats`
 
-Internal numeric IDs may be used for joins and locking.
+With the explicit-cancellation model and no temporary hold state, held may remain zero.
 
-## Status
-Use numeric status IDs backed by EnumStatus where statuses have compatible semantics.
+## Correctness Bar
 
-## Multi-row Stored Procedure Inputs
-Use connection-scoped temporary tables when a stored procedure needs multiple input rows. Centralize temporary-table handling and stored-procedure names in small utilities/constants.
+The assignment expects approximately 20,000 concurrent reservation attempts. Required properties:
 
-## Explicitly Out of Scope
-Unless the original assignment says otherwise:
-- UI
-- Payment gateway
-- Notifications
-- Kafka/RabbitMQ
-- Redis
-- Kubernetes/Terraform
-- Microservices
-- Elaborate authentication/authorization platform
-- Refresh-token ecosystem
-- Enterprise Clean Architecture
-- Unrequested infrastructure
+1. No seat is confirmed to two users.
+2. Zero unexpected 5xx during the burst.
+3. Reconciliation holds during and after the burst.
+4. Idempotent retries create no extra reservation.
+5. Per-user limit holds under concurrency.
+6. Identity is token-derived and cancellation is owner-only.
+
+The atomic decision must live in a race-safe mechanism such as row locks, conditional updates, or uniqueness constraints; read-then-write is insufficient.
+
+## Deploy & Observe
+
+- Public deployment with a live URL.
+- Dockerfile and Compose.
+- Liveness endpoint.
+- Readiness endpoint that checks DB reachability and fails closed if DB is unavailable.
+- Prometheus-style metrics: confirmed counter, decline counters including seat-taken/per-user-limit/idempotent-replay, and seats-available gauge.
+- Structured logs with correlation/request ID.
+- One-command burst script against a supplied base URL, including hot-seat contention, outcome distribution, and final reconciliation.
+
+## Deliverables
+
+- Public Git repo with full commit history.
+- Public live URL.
+- One-command burst script documented in README.
+- Metrics and logs access.
+- `WRITEUP.md` covering atomic decision/race safety, multi-seat deadlock avoidance, idempotency, release/expiry model, consistency vs availability during partition, observability/2am alerts, honest AI usage, and next steps.
+
+## Ground Rules
+
+- Money is integer minor units (paise), never floats.
+- AI tools are allowed and expected and usage must be disclosed honestly.
+- Clean checkout must build and run.
+- The running service is the primary grading target.
+
+## Scope Principle
+
+Use the simplest design that satisfies correctness and deploy/observe requirements. Avoid unrelated infrastructure and features.

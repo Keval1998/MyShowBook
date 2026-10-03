@@ -1,48 +1,48 @@
-# Local Setup
+# Setup
 
-## Prerequisites
-- .NET 10 SDK
-- Docker Desktop / Docker Engine with Compose
-- Git
-- Python 3.11+ for the concurrency test
+## Recommended: Docker
 
-## Restore and Build
-```bash
-dotnet restore
-dotnet build
-```
+A clean checkout should require only Docker and Git for the normal path.
 
-## Run the API
-```bash
-dotnet run --project src/MyshowBook/Api
-```
-
-## Database
-The application uses MySQL 8 with InnoDB. The final Docker Compose setup will provide MySQL locally.
-
-Database setup will be:
-1. Start MySQL.
-2. Apply schema.
-3. Seed status/reference data.
-4. Apply stored procedures.
-5. Start the API.
-
-Exact commands will be finalized with the database milestone.
-
-## Tests
-```bash
-dotnet test
-```
-
-## Concurrency Test
-The high-concurrency test will run from load-tests/ after the reservation API is available. It will verify the booking invariant, not merely count HTTP successes.
-
-## Configuration
-Do not commit secrets or local credentials. Use local development configuration or environment variables.
-
-## Docker
-The final setup will support:
 ```bash
 docker compose up --build
 ```
-Exact services, ports, credentials, and health checks will be documented when Docker configuration is added.
+
+This will build the API, start MySQL, wait for the database health check, initialize the database, and start the API. Check status with `docker compose ps` and logs with `docker compose logs -f api`.
+
+Stop with:
+
+```bash
+docker compose down
+```
+
+Reset local database state with:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+## Native Development
+
+Docker is the primary evaluator path. Native development can use the .NET 10 SDK:
+
+```bash
+dotnet restore
+dotnet build
+dotnet test
+```
+
+Do not install MySQL manually for the normal workflow; Compose provides it.
+
+## Burst Test
+
+Once the stack is running, the final README will provide the exact one-command burst invocation and default API port. The burst reports confirmed reservations, decline reasons, unexpected 5xx responses, and final reconciliation.
+
+## Clean Checkout
+
+The repository must build and run from a clean clone without undocumented manual database setup.
+
+## Configuration
+
+Do not commit secrets or local credentials. Development values belong in local configuration/environment variables; deployment secrets belong in the hosting platform.

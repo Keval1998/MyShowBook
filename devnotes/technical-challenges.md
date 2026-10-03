@@ -1,12 +1,8 @@
 # Technical Challenges
 
-Primary challenge: preventing double booking while preserving consistency under concurrent requests.
-
-Planned solution:
-- MySQL InnoDB transaction.
-- SELECT ... FOR UPDATE.
-- Deterministic seat lock ordering.
-- Database uniqueness constraints.
-- Atomic reservation writes.
-- User-row locking where required for MaxSeats.
-- Rollback on failed multi-seat reservation.
+- Hot-seat contention: the atomic decision must occur at the DB boundary; read-then-write is unsafe.
+- Multi-seat locking: sort internal seat IDs before SELECT ... FOR UPDATE to establish deterministic lock order.
+- Per-user limit: enforce inside the transaction while protecting concurrent requests for the same user/show.
+- Idempotency: persist the key so process restarts and multiple instances cannot lose the correctness boundary.
+- Reconciliation: derive show counts from seat state and maintain available + held + confirmed == total.
+- Deployability: Docker Compose should make a clean checkout runnable with one command.

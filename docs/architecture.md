@@ -1,6 +1,7 @@
 # Architecture
 
 ## Components
+
 ```text
 Client
   |
@@ -16,28 +17,30 @@ ASP.NET Core API
 ```
 
 ## Reservation Transaction
-1. Authenticate the user.
-2. Start one database transaction.
-3. Resolve public GUIDs to internal IDs in the same database session/transaction where applicable.
-4. Lock required rows.
+
+1. Authenticate and derive user identity from the token.
+2. Start one DB transaction.
+3. Resolve public GUIDs to internal IDs in the same DB session/transaction where applicable.
+4. Lock user/show state needed for the booking limit.
 5. Lock requested seats in deterministic ID order.
-6. Validate show ownership, seat availability, MaxSeats, and idempotency.
-7. Create reservation and reservation-seat mappings.
-8. Update seat status.
-9. Commit atomically.
+6. Check idempotency, seat ownership/state, and per-user limit.
+7. Write reservation and seat mappings atomically.
+8. Commit.
 
-If any requested seat cannot be reserved, the transaction rolls back and no partial reservation remains.
+If any requested seat fails validation, the whole transaction rolls back.
 
-## Concurrency Boundary
-A seat row is the inventory locking boundary. SELECT ... FOR UPDATE on requested seats prevents concurrent transactions from both successfully reserving the same seat.
+## Concurrency
 
-Deterministic lock ordering reduces deadlock risk for overlapping multi-seat requests.
-
-## Identifiers
-Public API identifiers are GUID columns named UserGuid, ShowGuid, SeatGuid, and ReservationGuid. Internal BIGINT keys are used for relationships.
-
-## Temporary Tables
-When a stored procedure requires multiple input rows, use a connection-scoped MySQL temporary table. Creation, population, procedure execution, and cleanup must use the same connection.
+A seat row is the inventory locking boundary. `SELECT ... FOR UPDATE` prevents concurrent transactions from both confirming the same seat. Deterministic lock ordering reduces deadlock risk for overlapping multi-seat requests.
 
 ## Data Access
-EF Core is not part of the planned data-access layer. Stored procedures are preferred for concurrency-critical operations. Simple parameterized SQL may be used where a stored procedure would add unnecessary complexity.
+
+EF Core is not planned. Stored procedures own concurrency-critical operations. Simple parameterized SQL may be used for straightforward reads.
+
+## Identifiers
+
+Public GUIDs: `UserGuid`, `ShowGuid`, `SeatGuid`, `ReservationGuid`. Internal BIGINT IDs support relationships and locking.
+
+## Temporary Tables
+
+When a procedure needs multiple input rows, use a connection-scoped MySQL temporary table. Creation, population, procedure execution, and cleanup must use the same connection.
