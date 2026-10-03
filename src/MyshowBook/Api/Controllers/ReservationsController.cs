@@ -1,14 +1,15 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyShowBook.Api.Enums;
 using MyShowBook.Api.Helpers;
 using MyShowBook.Api.Models;
-using MyShowBook.Api.Services;
+using MyShowBook.Api.Utility;
 
 namespace MyShowBook.Api.Controllers;
 
 [ApiController]
 [Route("reservations")]
-public sealed class ReservationsController(ReservationService reservationService) : ControllerBase
+public sealed class ReservationsController(ReservationHelper reservationHelper) : ControllerBase
 {
     [HttpPost("{reservationGuid:guid}/cancel")]
     [Authorize]
@@ -16,15 +17,16 @@ public sealed class ReservationsController(ReservationService reservationService
         Guid reservationGuid,
         CancellationToken cancellationToken)
     {
-        var userGuid = CurrentUserHelper.GetUserGuid(User);
-        var result = await reservationService.CancelAsync(
+        var userGuid = CurrentUserUtility.GetUserGuid(User);
+        var result = await reservationHelper.CancelAsync(
             userGuid, reservationGuid, cancellationToken);
 
         return result.Outcome switch
         {
-            "CANCELLED" => Ok(result.Reservation),
-            "NOT_FOUND" => NotFound(),
-            "CANCEL_CONFLICT" => Conflict(new { error = "Reservation cannot be cancelled in its current state." }),
+            CancellationOutcome.Cancelled => Ok(result.Reservation),
+            CancellationOutcome.NotFound => NotFound(),
+            CancellationOutcome.Conflict => Conflict(
+                new { error = "Reservation cannot be cancelled in its current state." }),
             _ => StatusCode(500, new { error = "Unexpected cancellation result." })
         };
     }
