@@ -22,7 +22,7 @@ public sealed class ReservationHelper(
         var seats = NormalizeSeats(request.Seats);
         var requestHash = RequestHashUtility.Create(showGuid, seats);
 
-        return database.ExecuteProcedureAsync(
+        return database.ExecuteProcedureWithTransientRetryAsync(
             StoredProcedureNames.CreateReservation,
             [
                 StoredProcedureUtility.String("p_user_guid", userGuid.ToString("D")),
@@ -55,7 +55,7 @@ public sealed class ReservationHelper(
         Guid userGuid,
         Guid reservationGuid,
         CancellationToken cancellationToken) =>
-        database.ExecuteProcedureAsync(
+        database.ExecuteProcedureWithTransientRetryAsync(
             StoredProcedureNames.CancelReservation,
             [
                 StoredProcedureUtility.String("p_user_guid", userGuid.ToString("D")),
