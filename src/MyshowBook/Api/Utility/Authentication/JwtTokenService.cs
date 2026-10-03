@@ -1,15 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace MyShowBook.Api.Authentication;
+namespace MyShowBook.Api.Utility.Authentication;
 
-public sealed class JwtTokenService(IOptions<JwtOptions> options)
+public sealed class JwtTokenService(JwtOptions options)
 {
-    private readonly JwtOptions _options = options.Value;
-
     public string Create(Guid userGuid, string username, bool isAdmin)
     {
         var claims = new[]
@@ -20,14 +17,14 @@ public sealed class JwtTokenService(IOptions<JwtOptions> options)
         };
 
         var credentials = new SigningCredentials(
-            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key)),
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key)),
             SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: _options.Issuer,
-            audience: _options.Audience,
+            issuer: options.Issuer,
+            audience: options.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_options.ExpiryMinutes),
+            expires: DateTime.UtcNow.AddMinutes(options.ExpiryMinutes),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

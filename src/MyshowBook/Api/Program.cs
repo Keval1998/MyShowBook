@@ -1,10 +1,10 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using MyShowBook.Api.Authentication;
-using MyShowBook.Api.Database;
+using MyShowBook.Api.Helpers;
 using MyShowBook.Api.Middleware;
-using MyShowBook.Api.Services;
+using MyShowBook.Api.Utility.Authentication;
+using MyShowBook.Api.Utility.Database;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,13 +49,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 builder.Services.AddOpenApi();
 
-builder.Services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
-builder.Services.AddSingleton<TempTableHelper>();
+builder.Services.AddSingleton<DatabaseUtility>();
+builder.Services.AddSingleton<TemporaryTableUtility>();
 builder.Services.AddSingleton<JwtTokenService>();
-builder.Services.AddSingleton<MetricsService>();
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<ShowService>();
-builder.Services.AddScoped<ReservationService>();
+builder.Services.AddSingleton<MetricsHelper>();
+builder.Services.AddScoped<AuthHelper>();
+builder.Services.AddScoped<ShowHelper>();
+builder.Services.AddScoped<ReservationHelper>();
 
 var app = builder.Build();
 

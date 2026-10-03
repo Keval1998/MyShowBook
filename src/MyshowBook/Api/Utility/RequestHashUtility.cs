@@ -1,9 +1,9 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace MyShowBook.Api.Helpers;
+namespace MyShowBook.Api.Utility;
 
-public static class RequestHashHelper
+public static class RequestHashUtility
 {
     public static string Create(Guid showGuid, IEnumerable<string> seats)
     {
@@ -14,6 +14,7 @@ public static class RequestHashHelper
 
         var payload = showGuid.ToString("D") + "|" + string.Join(",", normalizedSeats);
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
+
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
 

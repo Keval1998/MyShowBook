@@ -1,30 +1,46 @@
 # Laptop / Codespace Setup Commands
 
-## 1. Get the latest code
+## 1. Pull the latest code
 
 ```bash
 git pull origin main
 ```
 
-## 2. Start API + MySQL
+## 2. Set local environment values
 
-Docker is the primary setup path. No local MySQL installation is required.
+The repository intentionally does not store the database connection string or JWT signing key in appsettings.
+
+Copy this block into a Bash terminal:
 
 ```bash
-docker compose down
-docker compose up --build
+export MYSQL_DATABASE="myshowbook"
+export MYSQL_USER="myshowbook"
+export MYSQL_PASSWORD="myshowbook_dev"
+export MYSQL_ROOT_PASSWORD="root_dev"
+
+export CONNECTIONSTRINGS__DEFAULT="Server=db;Port=3306;Database=$MYSQL_DATABASE;User=$MYSQL_USER;Password=$MYSQL_PASSWORD;"
+export JWT_KEY="local-development-jwt-key-change-this-value-1234567890"
+export JWT_ISSUER="MyShowBook"
+export JWT_AUDIENCE="MyShowBook"
+export JWT_EXPIRY_MINUTES="60"
 ```
 
-The first startup creates tables, enum rows, dummy users, and stored procedures automatically. MySQL initialization runs only for a new data volume. Reset it after changing initialization SQL:
+ASP.NET Core reads hierarchical environment variables using double underscores, so CONNECTIONSTRINGS__DEFAULT becomes ConnectionStrings:Default and JWT_KEY is passed into Jwt:Key by Compose. Environment variables override appsettings values. citeturn7search1turn7search2
+
+## 3. Start API + MySQL
 
 ```bash
 docker compose down -v
 docker compose up --build
 ```
 
-## 3. Verify
+The first startup creates tables, enum rows, dummy users, and stored procedures.
 
-In another terminal:
+MySQL initialization is only performed for a new database volume. Use down -v again after changing initialization SQL.
+
+## 4. Verify
+
+Open another terminal with the same environment exports:
 
 ```bash
 curl http://localhost:8080/health/live
@@ -32,7 +48,7 @@ curl http://localhost:8080/health/ready
 curl http://localhost:8080/metrics
 ```
 
-## 4. Get a token
+## 5. Get a token
 
 Admin:
 
@@ -42,7 +58,7 @@ curl -X POST http://localhost:8080/auth/token \
   -d '{"username":"admin","password":"admin123!"}'
 ```
 
-User:
+Normal user:
 
 ```bash
 curl -X POST http://localhost:8080/auth/token \
@@ -56,7 +72,9 @@ Then:
 export TOKEN='PASTE_ACCESS_TOKEN_HERE'
 ```
 
-## 5. Create a show
+## 6. Create a show
+
+Use the admin token:
 
 ```bash
 curl -X POST http://localhost:8080/shows \
@@ -71,7 +89,7 @@ Copy the returned show_guid:
 export SHOW_ID='PASTE_SHOW_GUID_HERE'
 ```
 
-## 6. Reserve
+## 7. Reserve
 
 Use a normal user token:
 
@@ -82,13 +100,13 @@ curl -X POST "http://localhost:8080/shows/$SHOW_ID/reserve" \
   -d '{"seats":["A1"],"idempotency_key":"demo-1"}'
 ```
 
-## 7. Read show state
+## 8. Read show state
 
 ```bash
 curl "http://localhost:8080/shows/$SHOW_ID"
 ```
 
-## 8. Cancel
+## 9. Cancel
 
 ```bash
 export RESERVATION_ID='PASTE_RESERVATION_GUID_HERE'
@@ -97,23 +115,26 @@ curl -X POST "http://localhost:8080/reservations/$RESERVATION_ID/cancel" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-## 9. Native .NET
+## 10. Native .NET
 
-If .NET 10 SDK is installed:
+If .NET 10 SDK is installed, stop the API container and use the same environment values with the native process.
+
+Change the connection string host from db to localhost:
 
 ```bash
+export CONNECTIONSTRINGS__DEFAULT="Server=localhost;Port=3306;Database=$MYSQL_DATABASE;User=$MYSQL_USER;Password=$MYSQL_PASSWORD;"
 dotnet restore
 dotnet build
-dotnet test
+dotnet run --project src/MyshowBook/Api
 ```
 
-MySQL can remain in Compose:
+MySQL can remain in Docker:
 
 ```bash
 docker compose up -d db
 ```
 
-## 10. Useful Docker commands
+## 11. Useful Docker commands
 
 ```bash
 docker compose ps

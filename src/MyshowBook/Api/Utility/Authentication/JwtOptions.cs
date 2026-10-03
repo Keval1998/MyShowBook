@@ -1,4 +1,4 @@
-namespace MyShowBook.Api.Authentication;
+namespace MyShowBook.Api.Utility.Authentication;
 
 public sealed class JwtOptions
 {

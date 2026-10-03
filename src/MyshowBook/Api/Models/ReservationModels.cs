@@ -1,3 +1,5 @@
+using MyShowBook.Api.Enums;
+
 namespace MyShowBook.Api.Models;
 
 public sealed record ReserveRequest(
@@ -11,3 +13,7 @@ public sealed record ReservationResponse(
     IReadOnlyList<string> Seats,
     long AmountPaise,
     string Status);
+
+public sealed record ReservationResult(
+    ReservationOutcome Outcome,
+    ReservationResponse? Reservation);

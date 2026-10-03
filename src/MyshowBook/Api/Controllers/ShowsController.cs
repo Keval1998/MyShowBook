@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MyShowBook.Api.Enums;
 using MyShowBook.Api.Helpers;
 using MyShowBook.Api.Models;
-using MyShowBook.Api.Services;
+using MyShowBook.Api.Utility;
 
 namespace MyShowBook.Api.Controllers;
 
 [ApiController]
 [Route("shows")]
 public sealed class ShowsController(
-    ShowService showService,
-    ReservationService reservationService) : ControllerBase
+    ShowHelper showHelper,
+    ReservationHelper reservationHelper) : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = "admin")]
@@ -20,9 +21,8 @@ public sealed class ShowsController(
     {
         try
         {
-            return StatusCode(
-                StatusCodes.Status201Created,
-                await showService.CreateAsync(request, cancellationToken));
+            var response = await showHelper.CreateAsync(request, cancellationToken);
+            return StatusCode(StatusCodes.Status201Created, response);
         }
         catch (ArgumentException ex)
         {
@@ -35,7 +35,7 @@ public sealed class ShowsController(
         Guid showGuid,
         CancellationToken cancellationToken)
     {
-        var response = await showService.GetAsync(showGuid, cancellationToken);
+        var response = await showHelper.GetAsync(showGuid, cancellationToken);
         return response is null ? NotFound() : Ok(response);
     }
 
@@ -48,21 +48,25 @@ public sealed class ShowsController(
     {
         try
         {
-            var userGuid = CurrentUserHelper.GetUserGuid(User);
-            var result = await reservationService.ReserveAsync(
+            var userGuid = CurrentUserUtility.GetUserGuid(User);
+            var result = await reservationHelper.ReserveAsync(
                 userGuid, showGuid, request, cancellationToken);
 
             return result.Outcome switch
             {
-                "CONFIRMED" => StatusCode(
+                ReservationOutcome.Confirmed => StatusCode(
                     StatusCodes.Status201Created, result.Reservation),
-                "IDEMPOTENT_REPLAY" => Ok(result.Reservation),
-                "SEAT_TAKEN" => Conflict(new { error = "One or more requested seats are already taken." }),
-                "PER_USER_LIMIT" => Conflict(new { error = "Per-user booking limit exceeded." }),
-                "IDEMPOTENCY_CONFLICT" => Conflict(new { error = "Idempotency key was already used with a different request." }),
-                "INVALID_SEAT" => BadRequest(new { error = "One or more requested seats do not exist for this show." }),
-                "SHOW_NOT_FOUND" => NotFound(),
-                "USER_NOT_FOUND" => Unauthorized(),
+                ReservationOutcome.IdempotentReplay => Ok(result.Reservation),
+                ReservationOutcome.SeatTaken => Conflict(
+                    new { error = "One or more requested seats are already taken." }),
+                ReservationOutcome.PerUserLimit => Conflict(
+                    new { error = "Per-user booking limit exceeded." }),
+                ReservationOutcome.IdempotencyConflict => Conflict(
+                    new { error = "Idempotency key was already used with a different request." }),
+                ReservationOutcome.InvalidSeat => BadRequest(
+                    new { error = "One or more requested seats do not exist for this show." }),
+                ReservationOutcome.ShowNotFound => NotFound(),
+                ReservationOutcome.UserNotFound => Unauthorized(),
                 _ => StatusCode(500, new { error = "Unexpected reservation result." })
             };
         }
