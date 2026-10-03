@@ -5,17 +5,19 @@ Review actual implementation after development.
 
 ## Checks
 - **Build gate first:** verify the project compiles before deeper behavioral review. Compiler/syntax errors are review blockers and must be sent back to Agent 1 for correction.
-- Do not consider review complete while the project does not build.
+- **Startup gate immediately after build:** verify the application can construct its DI graph, start successfully, remain running, and respond to its health/liveness endpoint. Treat DI/configuration/startup failures as review blockers, even when compilation succeeds.
+- Do not consider review complete while the project does not build or start.
 - When a build fails, identify the first/root compiler error, inspect the affected file, require Agent 1 to fix it, and re-run verification before continuing.
-- Perform a final build/test verification after requested fixes.
+- **When startup fails, identify the root exception and inspect the complete dependency chain/configuration path. Do not stop at the first surface symptom.**
 - For Docker/NuGet failures, first distinguish stale checkout/cache issues from source issues. Verify the repository state and project dependencies before deeper investigation.
 - Treat optional dependencies and developer conveniences as lower priority than a clean required build.
-- Once the build passes, move immediately to real API tests, concurrency tests, and assignment-gap review; do not keep polishing non-required tooling.
+- Once the build and startup gates pass, move immediately to real API tests, concurrency tests, and assignment-gap review; do not keep polishing non-required tooling.
 - Review changed code and its impact.
 - Verify transaction, locking, and database constraint correctness.
 - Verify concurrency behavior.
 - Verify tests prove required scenarios.
 - Check rollback, idempotency, authentication, and booking-limit behavior where applicable.
+- **For every meaningful change, explicitly check constructor dependencies against registrations, configuration options against DI usage, and changed call sites for obvious runtime failures.**
 - Identify regressions and assignment gaps.
 - Check for basic syntax, invalid string interpolation, missing references, and other compile-time issues that static inspection can catch.
 - Avoid unrelated refactoring.
