@@ -43,7 +43,7 @@ public sealed class MetricsHelper(DatabaseUtility database)
                     };
 
                     builder.AppendLine(
-                        $"reservations_declined_total{{reason="{label}"}} {value}");
+                        $"reservations_declined_total{{reason=\"{label}\"}} {value}");
                 }
 
                 builder.AppendLine("# TYPE seats_available gauge");
@@ -54,7 +54,7 @@ public sealed class MetricsHelper(DatabaseUtility database)
                     var available = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
 
                     builder.AppendLine(
-                        $"seats_available{{show_id="{showGuid:D}"}} {available}");
+                        $"seats_available{{show_id=\"{showGuid:D}\"}} {available}");
                 }
 
                 return builder.ToString();
