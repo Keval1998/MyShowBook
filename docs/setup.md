@@ -4,7 +4,7 @@
 
 A clean checkout uses Docker Compose for MySQL and the API.
 
-Set the required environment values from docs/laptop-setup-commands.md, then run:
+Set the required environment values in your shell, then run:
 
 docker compose down -v
 docker compose up --build
@@ -36,6 +36,6 @@ docker compose up --build
 
 Connection string and JWT signing key are not stored in appsettings.json.
 
-Use the copy/paste environment block in docs/laptop-setup-commands.md.
+Use environment variables for the connection string and JWT signing key. Do not commit deployment secrets.
 
 ASP.NET Core supports environment variables as configuration providers and maps double underscores to hierarchical configuration keys. citeturn7search1
