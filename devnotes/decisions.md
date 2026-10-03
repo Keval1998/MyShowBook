@@ -5,7 +5,7 @@
 - Multi-seat reservation semantics are all-or-nothing.
 - Release model is explicit owner-only cancellation.
 - MySQL/InnoDB is the source of truth.
-- Reservation correctness uses one transaction, user-row serialization for per-user/idempotency races, and deterministic seat-row locking.
+- Reservation correctness uses one transaction, user-row serialization for per-user/idempotency races, and deterministic seat-number row locking.
 - Idempotency is persisted on Reservations with a request hash and unique (UserId, IdempotencyKey).
 - Temporary tables are used for multi-seat stored-procedure inputs and created/populated on the same MySQL connection used to call the procedure.
 - Stored procedure names and temporary table names are centralized in constants.
