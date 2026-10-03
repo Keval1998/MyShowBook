@@ -102,8 +102,7 @@ jobs:
           [ "$(jq -r .reservation_id "$TMP/body")" = "$RID" ] || fail "idempotent replay returned different reservation"
           code=$(reserve "$SHOW" "$USER1" '["A2"]' 'qa-idem-1')
           assert_code 409 "$code" "same key different body"
-          code=$(reserve "$SHOW" "$USER2" '["A1"]' 'qa-other-user-seat'
-          )"
+          code=$(reserve "$SHOW" "$USER2" '["A1"]' 'qa-other-user-seat')
           assert_code 409 "$code" "already taken seat"
           get_show "$SHOW"
 
