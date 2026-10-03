@@ -8,6 +8,9 @@ Review actual implementation after development.
 - Do not consider review complete while the project does not build.
 - When a build fails, identify the first/root compiler error, inspect the affected file, require Agent 1 to fix it, and re-run verification before continuing.
 - Perform a final build/test verification after requested fixes.
+- For Docker/NuGet failures, first distinguish stale checkout/cache issues from source issues. Verify the repository state and project dependencies before deeper investigation.
+- Treat optional dependencies and developer conveniences as lower priority than a clean required build.
+- Once the build passes, move immediately to real API tests, concurrency tests, and assignment-gap review; do not keep polishing non-required tooling.
 - Review changed code and its impact.
 - Verify transaction, locking, and database constraint correctness.
 - Verify concurrency behavior.
