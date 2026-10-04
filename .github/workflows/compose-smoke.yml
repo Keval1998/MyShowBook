@@ -35,6 +35,13 @@ jobs:
           curl -fsS http://localhost:8080/health/ready
           curl -fsS http://localhost:8080/metrics >/dev/null
 
+      - name: Registration smoke
+        run: |
+          username=ci-$RANDOM
+          status=$(curl -s -o /tmp/register.json -w "%{http_code}" -X POST http://localhost:8080/auth/register -H "Content-Type: application/json" -d "{\"username\":\"$username\",\"password\":\"Password123!\",\"role\":\"customer\"}")
+          cat /tmp/register.json
+          test "$status" = "201"
+
       - name: Cleanup
         if: always()
         run: docker compose down -v
