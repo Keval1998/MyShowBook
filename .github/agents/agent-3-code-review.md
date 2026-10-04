@@ -4,6 +4,8 @@
 Review actual implementation after development.
 
 ## Checks
+- **Build gate first:** execute the repository's real clean build against the changed checkout (for this project: `docker compose build --no-cache api`). Static inspection is not build verification. Never approve or declare review complete without an executed passing build.
+- **Cross-file consistency gate:** verify every referenced method/type/member exists in the target checkout; check changed call sites, constructor dependencies, DI registrations, package references, configuration keys, DTO properties, enum values, and stored-procedure parameter helpers.
 - **Build gate first:** verify the project compiles before deeper behavioral review. Compiler/syntax errors are review blockers and must be sent back to Agent 1 for correction.
 - **Startup gate immediately after build:** verify the application can construct its DI graph, start successfully, remain running, and respond to its health/liveness endpoint. Treat DI/configuration/startup failures as review blockers, even when compilation succeeds.
 - Do not consider review complete while the project does not build or start.
