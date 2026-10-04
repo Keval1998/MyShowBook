@@ -12,4 +12,7 @@ public static class StoredProcedureUtility
 
     public static MySqlParameter Int(string name, int value) =>
         new(name, MySqlDbType.Int32) { Value = value };
+
+    public static MySqlParameter Bool(string name, bool value) =>
+        new(name, MySqlDbType.Boolean) { Value = value };
 }
