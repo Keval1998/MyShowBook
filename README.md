@@ -4,7 +4,7 @@ Backend take-home assignment implementation for a seat reservation service.
 
 ## Quick Start
 
-Set the environment values from docs/laptop-setup-commands.md, then run:
+Set the required environment values in your shell, then run:
 
 docker compose down -v
 docker compose up --build
@@ -51,7 +51,6 @@ These credentials are local assignment credentials only.
 
 ## Documentation
 
-docs/laptop-setup-commands.md — copy/paste setup commands
 docs/setup.md — environment and database initialization
 docs/architecture.md — architecture
 docs/paytm-assignment-requirements.md — assignment requirements
@@ -69,4 +68,4 @@ src/MyshowBook/Api/Helpers — application logic
 src/MyshowBook/Api/Models — request/response/result models
 src/MyshowBook/Api/Utility — shared infrastructure
 
-Automated concurrency verification and deployment are the next milestones.
+Run the assignment burst with `bash scripts/burst.sh http://localhost:8080` (default 20,000 attempts). Set `BURST_COUNT` to change the load and `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`USER_USERNAME`/`USER_PASSWORD` for non-default credentials.
