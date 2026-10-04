@@ -130,6 +130,20 @@ public sealed class DatabaseBootstrapper(
         if (createIndex < 0)
             throw new InvalidOperationException($"No CREATE PROCEDURE statement found in {path}.");
 
+        var dropIndex = sql.IndexOf("DROP PROCEDURE IF EXISTS", StringComparison.OrdinalIgnoreCase);
+        if (dropIndex >= 0 && dropIndex < createIndex)
+        {
+            var dropEnd = sql.IndexOf(';', dropIndex);
+            if (dropEnd < 0)
+                throw new InvalidOperationException($"Invalid DROP PROCEDURE statement in {path}.");
+
+            var dropStatement = sql[dropIndex..dropEnd].Trim() + ";";
+
+            await using var dropCommand = connection.CreateCommand();
+            dropCommand.CommandText = dropStatement;
+            await dropCommand.ExecuteNonQueryAsync(cancellationToken);
+        }
+
         var statement = sql[createIndex..].Trim();
 
         await using var command = connection.CreateCommand();
