@@ -16,7 +16,7 @@ Directory.CreateDirectory(logDirectory);
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .Enrich.WithProperty("application", "MyShowBook")
-    .MinimumLevel.Information()
+    .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
     .WriteTo.Console(new CompactJsonFormatter())
     .WriteTo.File(

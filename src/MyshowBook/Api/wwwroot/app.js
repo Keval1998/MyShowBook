@@ -107,6 +107,27 @@ async function loadShows() {
   }
 }
 
+$("createShowForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  try {
+    const seats = $("showSeats").value.split(",").map(x => x.trim()).filter(Boolean);
+    const result = await api("/shows", {
+      method: "POST",
+      body: JSON.stringify({
+        name: $("showName").value,
+        seats,
+        price_paise: Number($("showPrice").value)
+      })
+    });
+    setMessage("Show created: " + result.name);
+    $("createShowForm").reset();
+    await loadShows();
+    await loadShow(result.show_guid);
+  } catch (error) {
+    setMessage("Create show failed: " + error.message);
+  }
+});
+
 async function loadShow(id) {
   try {
     const show = await api("/shows/" + encodeURIComponent(id));
