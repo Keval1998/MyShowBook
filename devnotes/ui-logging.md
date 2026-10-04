@@ -22,5 +22,8 @@ The browser surface is intentionally minimal and exists to make assignment verif
 - X-Correlation-ID is retained through the existing correlation middleware.
 - Request completion logs include method, path, status and elapsed time.
 
+## Verification incident
+The merged UI/logging change exposed a compile-time defect during the user's clean Docker build: RegistrationHelper called StoredProcedureUtility.Bool(...), but the utility did not define that method. Static review had incorrectly treated the change as verified without an executable build result. The fix adds the missing boolean parameter helper and the review workflow now requires executable build evidence before a review can be marked passed.
+
 ## Scope guard
 Registration with an admin role is a deliberate local/demo convenience requested for manual assignment testing. It should not be treated as unrestricted production self-service admin registration.
