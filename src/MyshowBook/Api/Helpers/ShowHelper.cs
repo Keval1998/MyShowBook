@@ -30,6 +30,14 @@ public sealed class ShowHelper(
             cancellationToken);
     }
 
+    public Task<IReadOnlyList<ShowListItemResponse>> ListAsync(
+        CancellationToken cancellationToken) =>
+        database.ExecuteProcedureAsync(
+            StoredProcedureNames.ListShows,
+            [],
+            ReadShowListAsync,
+            cancellationToken: cancellationToken);
+
     public Task<ShowResponse?> GetAsync(
         Guid showGuid,
         CancellationToken cancellationToken) =>
@@ -38,6 +46,27 @@ public sealed class ShowHelper(
             [StoredProcedureUtility.String("p_show_guid", showGuid.ToString("D"))],
             ReadExistingShowAsync,
             cancellationToken: cancellationToken);
+
+    private static async Task<IReadOnlyList<ShowListItemResponse>> ReadShowListAsync(
+        MySqlConnector.MySqlDataReader reader,
+        CancellationToken cancellationToken)
+    {
+        var shows = new List<ShowListItemResponse>();
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            shows.Add(new ShowListItemResponse(
+                reader.GetGuid(0),
+                reader.GetString(1),
+                reader.GetInt64(2),
+                reader.GetInt32(3),
+                reader.GetInt32(4),
+                reader.GetInt32(5),
+                reader.GetInt32(6)));
+        }
+
+        return shows;
+    }
 
     private static async Task<ShowResponse> ReadShowAsync(
         MySqlConnector.MySqlDataReader reader,

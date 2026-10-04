@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MyShowBook</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>MyShowBook</h1>
+      <button id="logout" class="secondary hidden">Logout</button>
+    </header>
+
+    <section id="auth" class="grid">
+      <form id="loginForm" class="card">
+        <h2>Login</h2>
+        <label>Username<input id="loginUsername" required></label>
+        <label>Password<input id="loginPassword" type="password" required></label>
+        <button>Login</button>
+      </form>
+
+      <form id="registerForm" class="card">
+        <h2>Register</h2>
+        <p class="hint">Simple local assignment registration.</p>
+        <label>Username<input id="registerUsername" required maxlength="64"></label>
+        <label>Password<input id="registerPassword" type="password" minlength="8" required></label>
+        <label>Role
+          <select id="registerRole">
+            <option value="customer">Customer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+        <button>Register</button>
+      </form>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <div id="message" class="message"></div>
+
+      <section id="adminPanel" class="card hidden">
+        <h2>Create Show</h2>
+        <form id="createShowForm" class="form-grid">
+          <label>Name<input id="showName" required></label>
+          <label>Price (paise)<input id="showPrice" type="number" min="0" required></label>
+          <label>Seats (comma separated)<input id="showSeats" placeholder="A1,A2,A3" required></label>
+          <button>Create Show</button>
+        </form>
+        <button id="viewLogs" class="secondary">View Logs</button>
+        <pre id="logs" class="logs hidden"></pre>
+      </section>
+
+      <section class="card">
+        <div class="row">
+          <h2>Shows</h2>
+          <button id="refreshShows" class="secondary">Refresh</button>
+        </div>
+        <div id="shows" class="shows"></div>
+      </section>
+
+      <section id="showDetails" class="card hidden">
+        <h2 id="detailTitle"></h2>
+        <p id="detailSummary"></p>
+        <div id="seatList" class="seats"></div>
+        <form id="bookingForm" class="form-grid">
+          <label>Seats to book<input id="bookingSeats" placeholder="A1,A2" required></label>
+          <label>Idempotency key<input id="idempotencyKey" required></label>
+          <button>Book Selected Seats</button>
+        </form>
+        <pre id="bookingResult" class="result"></pre>
+      </section>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

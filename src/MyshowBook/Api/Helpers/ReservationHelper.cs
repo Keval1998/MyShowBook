@@ -9,7 +9,8 @@ namespace MyShowBook.Api.Helpers;
 public sealed class ReservationHelper(
     DatabaseUtility database,
     TemporaryTableUtility temporaryTables,
-    MetricsHelper metrics)
+    MetricsHelper metrics,
+    ILogger<ReservationHelper> logger)
 {
     public Task<ReservationResult> ReserveAsync(
         Guid userGuid,
@@ -44,6 +45,12 @@ public sealed class ReservationHelper(
                 else if (result.Outcome == ReservationOutcome.IdempotentReplay)
                     metrics.RecordDeclined(DeclineReason.IdempotentReplay);
 
+                logger.LogInformation(
+                    "Reservation decision {Outcome} for show {ShowGuid} with {SeatCount} seat(s)",
+                    result.Outcome,
+                    showGuid,
+                    seats.Length);
+
                 return result;
             },
             (connection, ct) => temporaryTables.CreateSeatInputAsync(
@@ -51,11 +58,12 @@ public sealed class ReservationHelper(
             cancellationToken);
     }
 
-    public Task<CancellationResult> CancelAsync(
+    public async Task<CancellationResult> CancelAsync(
         Guid userGuid,
         Guid reservationGuid,
-        CancellationToken cancellationToken) =>
-        database.ExecuteProcedureWithTransientRetryAsync(
+        CancellationToken cancellationToken)
+    {
+        var result = await database.ExecuteProcedureWithTransientRetryAsync(
             StoredProcedureNames.CancelReservation,
             [
                 StoredProcedureUtility.String("p_user_guid", userGuid.ToString("D")),
@@ -63,6 +71,14 @@ public sealed class ReservationHelper(
             ],
             ReadCancellationResultAsync,
             cancellationToken: cancellationToken);
+
+        logger.LogInformation(
+            "Reservation cancellation decision {Outcome} for reservation {ReservationGuid}",
+            result.Outcome,
+            reservationGuid);
+
+        return result;
+    }
 
     private static async Task<ReservationResult> ReadResultAsync(
         MySqlConnector.MySqlDataReader reader,

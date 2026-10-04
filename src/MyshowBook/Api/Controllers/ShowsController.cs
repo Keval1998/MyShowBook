@@ -30,6 +30,11 @@ public sealed class ShowsController(
         }
     }
 
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<ShowListItemResponse>>> List(
+        CancellationToken cancellationToken) =>
+        Ok(await showHelper.ListAsync(cancellationToken));
+
     [HttpGet("{showGuid:guid}")]
     public async Task<ActionResult<ShowResponse>> Get(
         Guid showGuid,
