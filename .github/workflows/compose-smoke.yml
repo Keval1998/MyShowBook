@@ -1,0 +1,40 @@
+name: Compose Runtime Smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  compose-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start stack
+        run: docker compose up --build -d
+
+      - name: Wait for readiness
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health/ready; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs db
+          docker compose logs api
+          exit 1
+
+      - name: Critical smoke endpoints
+        run: |
+          curl -fsS http://localhost:8080/health/live
+          curl -fsS http://localhost:8080/health/ready
+          curl -fsS http://localhost:8080/metrics >/dev/null
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
