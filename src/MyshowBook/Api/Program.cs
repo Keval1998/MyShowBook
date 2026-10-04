@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -86,16 +87,18 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseAuthentication();
 app.UseSerilogRequestLogging(options =>
 {
     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
     {
         diagnosticContext.Set("correlation_id",
             httpContext.Response.Headers["X-Correlation-ID"].FirstOrDefault());
-        diagnosticContext.Set("user", httpContext.User.Identity?.Name);
+        diagnosticContext.Set(
+            "user",
+            httpContext.User.FindFirst(JwtRegisteredClaimNames.UniqueName)?.Value);
     };
 });
-app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
