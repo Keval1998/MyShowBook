@@ -33,7 +33,7 @@ public sealed class RegistrationHelper(DatabaseUtility database, ILogger<Registr
                         return null;
 
                     return new RegisterResponse(
-                        Guid.Parse(reader.GetString(0)),
+                        reader.GetGuid(0),
                         reader.GetString(1),
                         reader.GetBoolean(2) ? "admin" : "customer");
                 },
