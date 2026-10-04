@@ -15,7 +15,18 @@ Agent 4 — Context & DevNotes Sync
 - Agent 3 reviews actual implementation, impact, concurrency, and tests.
 - Agent 4 maintains persistent project context.
 
-All roles may use standard available MCPs/tools when directly useful for repository inspection, files, documentation, testing, or technical references. Tool use must not expand assignment scope.
-
 Meaningful implementation follows:
-PLAN → human review → IMPLEMENT → TEST → human review → COMMIT
+PLAN → human review → IMPLEMENT → TEST → human review → COMMIT.
+
+## Hard verification gates
+
+A review may not be reported as passed from static inspection alone.
+
+1. **Compile gate:** execute the relevant `dotnet build` or `dotnet publish` against the current checkout. Record the exact command and result.
+2. **Startup gate:** for application/container changes, start the actual service and verify it remains running and its health/liveness endpoint responds.
+3. **API smoke gate:** exercise the changed/critical API path when practical.
+4. **Assignment gate:** after executable gates pass, review concurrency, idempotency, authentication, observability, Docker, and required deliverables.
+
+If execution is unavailable, the status must be explicitly **UNVERIFIED**. Never use words such as “verified”, “passes”, or “ready” for a build/runtime claim without command evidence.
+
+If a gate fails, fix the root cause and repeat the failed gate before proceeding.
