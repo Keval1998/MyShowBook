@@ -74,6 +74,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton<DatabaseUtility>();
+builder.Services.AddSingleton<DatabaseBootstrapper>();
 builder.Services.AddSingleton<TemporaryTableUtility>();
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<MetricsHelper>();
@@ -83,6 +84,8 @@ builder.Services.AddScoped<ShowHelper>();
 builder.Services.AddScoped<ReservationHelper>();
 
 var app = builder.Build();
+
+await app.Services.GetRequiredService<DatabaseBootstrapper>().RunAsync(CancellationToken.None);
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
