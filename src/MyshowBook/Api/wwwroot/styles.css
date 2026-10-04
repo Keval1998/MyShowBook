@@ -16,6 +16,7 @@ button.secondary { background: #fff; color: #17202a; }
 .seat.confirmed { background: #ffd6d6; }
 .seat.held { background: #fff0c2; }
 .message { min-height: 24px; margin-bottom: 12px; }
+.hint { color: #666; font-size: 13px; }
 .result, .logs { white-space: pre-wrap; overflow: auto; background: #111; color: #eee; padding: 12px; border-radius: 6px; max-height: 420px; }
 .hidden { display: none !important; }
 @media (max-width: 600px) { .container { padding: 12px; } .show { align-items: flex-start; flex-direction: column; } }

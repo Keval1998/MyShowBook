@@ -8,6 +8,12 @@ const headers = () => token()
   ? { Authorization: "Bearer " + token(), "Content-Type": "application/json" }
   : { "Content-Type": "application/json" };
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+}
+
 function setMessage(value) {
   $("message").textContent = value || "";
 }
@@ -90,10 +96,10 @@ async function loadShows() {
       ? shows.map(show => `
         <div class="show">
           <div>
-            <strong>${show.name}</strong>
+            <strong>${escapeHtml(show.name)}</strong>
             <div>₹${(show.price_paise / 100).toFixed(2)} · ${show.available_seats}/${show.total_seats} available</div>
           </div>
-          <button onclick="loadShow('${show.show_guid}')">View</button>
+          <button onclick="loadShow('${escapeHtml(show.show_guid)}')">View</button>
         </div>`).join("")
       : "<p>No shows yet.</p>";
   } catch (error) {
@@ -103,7 +109,7 @@ async function loadShows() {
 
 async function loadShow(id) {
   try {
-    const show = await api("/shows/" + id);
+    const show = await api("/shows/" + encodeURIComponent(id));
     selectedShowId = id;
     $("detailTitle").textContent = show.name;
     $("detailSummary").textContent =
@@ -112,7 +118,7 @@ async function loadShow(id) {
       " · Held " + show.held_seats +
       " · Confirmed " + show.confirmed_seats;
     $("seatList").innerHTML = show.seats.map(seat =>
-      `<span class="seat ${seat.status}">${seat.seat_number}: ${seat.status}</span>`).join("");
+      `<span class="seat ${escapeHtml(seat.status)}">${escapeHtml(seat.seat_number)}: ${escapeHtml(seat.status)}</span>`).join("");
     $("bookingSeats").value = "";
     $("idempotencyKey").value = crypto.randomUUID();
     $("bookingResult").textContent = "";
@@ -127,7 +133,7 @@ $("bookingForm").addEventListener("submit", async event => {
   if (!selectedShowId) return;
   try {
     const seats = $("bookingSeats").value.split(",").map(x => x.trim()).filter(Boolean);
-    const result = await api("/shows/" + selectedShowId + "/reserve", {
+    const result = await api("/shows/" + encodeURIComponent(selectedShowId) + "/reserve", {
       method: "POST",
       body: JSON.stringify({ seats, idempotency_key: $("idempotencyKey").value })
     });
