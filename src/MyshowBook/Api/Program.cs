@@ -5,8 +5,30 @@ using MyShowBook.Api.Helpers;
 using MyShowBook.Api.Middleware;
 using MyShowBook.Api.Utility.Authentication;
 using MyShowBook.Api.Utility.Database;
+using Serilog;
+using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var logDirectory = Path.Combine(builder.Environment.ContentRootPath, "logs");
+Directory.CreateDirectory(logDirectory);
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("application", "MyShowBook")
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .WriteTo.Console(new CompactJsonFormatter())
+    .WriteTo.File(
+        new CompactJsonFormatter(),
+        Path.Combine(logDirectory, "myshowbook-.log"),
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        rollOnFileSizeLimit: true,
+        shared: true)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection(JwtOptions.SectionName));
@@ -55,17 +77,41 @@ builder.Services.AddSingleton<TemporaryTableUtility>();
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<MetricsHelper>();
 builder.Services.AddScoped<AuthHelper>();
+builder.Services.AddScoped<RegistrationHelper>();
 builder.Services.AddScoped<ShowHelper>();
 builder.Services.AddScoped<ReservationHelper>();
 
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseSerilogRequestLogging(options =>
+{
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("correlation_id",
+            httpContext.Response.Headers["X-Correlation-ID"].FirstOrDefault());
+        diagnosticContext.Set("user", httpContext.User.Identity?.Name);
+    };
+});
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+try
+{
+    Log.Information("MyShowBook API started");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "MyShowBook API stopped unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 public partial class Program;

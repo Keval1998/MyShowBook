@@ -11,7 +11,7 @@ services:
     volumes:
       - ./database:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -34,3 +34,5 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080"
+    volumes:
+      - ./logs:/app/logs

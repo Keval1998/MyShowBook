@@ -1,0 +1,21 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #17202a; }
+.container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+.header, .row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+label { display: grid; gap: 6px; margin-bottom: 12px; font-size: 14px; }
+input, select, button { font: inherit; padding: 9px 10px; border-radius: 5px; border: 1px solid #bbb; }
+button { cursor: pointer; background: #17202a; color: #fff; border-color: #17202a; }
+button.secondary { background: #fff; color: #17202a; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end; }
+.shows { display: grid; gap: 10px; }
+.show { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid #ddd; border-radius: 6px; padding: 12px; }
+.seats { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.seat { padding: 6px 8px; border-radius: 4px; background: #e9ecef; font-size: 12px; }
+.seat.confirmed { background: #ffd6d6; }
+.seat.held { background: #fff0c2; }
+.message { min-height: 24px; margin-bottom: 12px; }
+.result, .logs { white-space: pre-wrap; overflow: auto; background: #111; color: #eee; padding: 12px; border-radius: 6px; max-height: 420px; }
+.hidden { display: none !important; }
+@media (max-width: 600px) { .container { padding: 12px; } .show { align-items: flex-start; flex-direction: column; } }
