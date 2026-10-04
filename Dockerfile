@@ -12,6 +12,7 @@ WORKDIR /app
 ENV ASPNETCORE_HTTP_PORTS=8080
 
 COPY --from=build /app/publish .
+COPY database /app/database
 
 EXPOSE 8080
 
