@@ -130,21 +130,22 @@ public sealed class DatabaseBootstrapper(
         if (createIndex < 0)
             throw new InvalidOperationException($"No CREATE PROCEDURE statement found in {path}.");
 
-        var dropIndex = sql.IndexOf("DROP PROCEDURE IF EXISTS", StringComparison.OrdinalIgnoreCase);
-        if (dropIndex >= 0 && dropIndex < createIndex)
+        var createStatement = sql[createIndex..].Trim();
+        var createHeaderEnd = createStatement.IndexOf('(');
+        if (createHeaderEnd < 0)
+            throw new InvalidOperationException($"Invalid CREATE PROCEDURE statement in {path}.");
+
+        var procedureName = createStatement["CREATE PROCEDURE".Length..createHeaderEnd].Trim();
+        if (procedureName.Length == 0 || procedureName.Any(ch => !(char.IsLetterOrDigit(ch) || ch == '_')))
+            throw new InvalidOperationException($"Invalid procedure name in {path}.");
+
+        await using (var dropCommand = connection.CreateCommand())
         {
-            var dropEnd = sql.IndexOf(';', dropIndex);
-            if (dropEnd < 0)
-                throw new InvalidOperationException($"Invalid DROP PROCEDURE statement in {path}.");
-
-            var dropStatement = sql[dropIndex..dropEnd].Trim() + ";";
-
-            await using var dropCommand = connection.CreateCommand();
-            dropCommand.CommandText = dropStatement;
+            dropCommand.CommandText = $"DROP PROCEDURE IF EXISTS {procedureName};";
             await dropCommand.ExecuteNonQueryAsync(cancellationToken);
         }
 
-        var statement = sql[createIndex..].Trim();
+        var statement = createStatement;
 
         await using var command = connection.CreateCommand();
         command.CommandText = statement;
