@@ -116,21 +116,25 @@ public sealed class DatabaseBootstrapper(
     {
         var sql = await File.ReadAllTextAsync(path, cancellationToken);
 
-        sql = sql.Replace("DELIMITER $$", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace("DELIMITER //", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace("DELIMITER ;", string.Empty, StringComparison.OrdinalIgnoreCase)
-            .Replace("END$$", "END;", StringComparison.Ordinal)
-            .Replace("END//", "END;", StringComparison.Ordinal);
+        sql = string.Join(
+            Environment.NewLine,
+            sql.Split('\n')
+                .Where(line => !line.TrimStart().StartsWith("DELIMITER ", StringComparison.OrdinalIgnoreCase)));
 
-        foreach (var statement in sql
-                     .Split(new[] { "END;" }, StringSplitOptions.RemoveEmptyEntries)
-                     .Select(x => x.Trim())
-                     .Where(x => x.Contains("CREATE PROCEDURE", StringComparison.OrdinalIgnoreCase)))
-        {
-            await using var command = connection.CreateCommand();
-            command.CommandText = statement + "END;";
-            await command.ExecuteNonQueryAsync(cancellationToken);
-        }
+        sql = sql
+            .Replace("END$$", "END;", StringComparison.Ordinal)
+            .Replace("END//", "END;", String.Ordinal)
+            .Replace("END //", "END;", String.Ordinal);
+
+        var createIndex = sql.IndexOf("CREATE PROCEDURE", StringComparison.OrdinalIgnoreCase);
+        if (createIndex < 0)
+            throw new InvalidOperationException($"No CREATE PROCEDURE statement found in {path}.");
+
+        var statement = sql[createIndex..].Trim();
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = statement;
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private static async Task MarkBootstrapCompleteAsync(
