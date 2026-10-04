@@ -123,8 +123,8 @@ public sealed class DatabaseBootstrapper(
 
         sql = sql
             .Replace("END$$", "END;", StringComparison.Ordinal)
-            .Replace("END//", "END;", String.Ordinal)
-            .Replace("END //", "END;", String.Ordinal);
+            .Replace("END//", "END;", StringComparison.Ordinal)
+            .Replace("END //", "END;", StringComparison.Ordinal);
 
         var createIndex = sql.IndexOf("CREATE PROCEDURE", StringComparison.OrdinalIgnoreCase);
         if (createIndex < 0)
